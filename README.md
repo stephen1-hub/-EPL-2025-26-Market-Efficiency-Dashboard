@@ -13,6 +13,7 @@ Using betting market probabilities from Bet365 odds, the dashboard identifies:
 The project combines sports analytics, probability modeling, and interactive dashboard development into a professional portfolio project.
 
 ---
+# live demo: https://idhwtq88ytqykqkqfhph97.streamlit.app/
 
 ## Objectives
 
