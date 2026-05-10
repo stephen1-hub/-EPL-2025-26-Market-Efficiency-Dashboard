@@ -223,6 +223,13 @@ st.plotly_chart(
     fig,
     use_container_width=True
 )
+st.markdown("""
+This table compares bookmaker home win probabilities with actual home win rates.
+
+Expected Probability = Market pricing  
+Actual Win Rate = Real outcomes  
+Overperformance = Actual − Expected
+""")
 
 # ---------------------------------------------------
 # TEAM CALIBRATION TABLE
