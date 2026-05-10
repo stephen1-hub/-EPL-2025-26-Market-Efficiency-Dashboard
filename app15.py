@@ -92,6 +92,30 @@ team_overperf = (
 ).sort_values(ascending=False)
 
 # ---------------------------------------------------
+# TEAM-LEVEL HOME CALIBRATION TABLE
+# ---------------------------------------------------
+
+team_home_calibration = (
+    df.groupby("HomeTeam")
+    .agg(
+        expected_prob=("home_prob", "mean"),
+        actual_win_rate=("actual_home_win", "mean"),
+        matches=("actual_home_win", "count")
+    )
+    .reset_index()
+)
+
+team_home_calibration["overperformance"] = (
+    team_home_calibration["actual_win_rate"]
+    - team_home_calibration["expected_prob"]
+)
+
+team_home_calibration = team_home_calibration.sort_values(
+    "overperformance",
+    ascending=False
+)
+
+# ---------------------------------------------------
 # SIDEBAR
 # ---------------------------------------------------
 st.sidebar.header("⚙️ Dashboard Controls")
@@ -200,6 +224,24 @@ st.plotly_chart(
     use_container_width=True
 )
 
+# ---------------------------------------------------
+# TEAM CALIBRATION TABLE
+# ---------------------------------------------------
+
+st.subheader("📊 Team-Level Home Calibration")
+
+st.dataframe(
+    team_home_calibration[
+        [
+            "HomeTeam",
+            "expected_prob",
+            "actual_win_rate",
+            "overperformance",
+            "matches"
+        ]
+    ].round(3),
+    use_container_width=True
+)
 # ---------------------------------------------------
 # TEAM EXPLORER
 # ---------------------------------------------------
