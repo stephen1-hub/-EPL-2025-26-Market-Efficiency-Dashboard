@@ -1,262 +1,195 @@
-# ⚽ EPL 2025/26 Market Efficiency Dashboard
-
+## EPL 2025/26 Market Efficiency Dashboard
 ## Overview
 
-This project is a football analytics dashboard built with Python and Streamlit that analyzes how Premier League teams perform relative to bookmaker expectations during the 2025/26 season.
+This project is a quantitative football analytics dashboard built with Python and Streamlit that evaluates how Premier League teams perform relative to bookmaker-implied expectations during the 2025/26 season.
 
-Using betting market probabilities from Bet365 odds, the dashboard identifies:
+Using betting market probabilities derived from Bet365 odds, the system performs:
 
-* Teams outperforming expectations
-* Teams underperforming expectations
-* Market inefficiencies in football outcomes
+Market efficiency analysis
+Team-level statistical significance testing
+Rolling calibration monitoring
+Structural deviation detection
 
-The project combines sports analytics, probability modeling, and interactive dashboard development into a professional portfolio project.
+The project combines sports analytics, probability modeling, and inferential statistics into a professional-grade quantitative dashboard.
 
----
-# live demo: https://idhwtq88ytqykqkqfhph97.streamlit.app/
+## Live Demo
+
+https://idhwtq88ytqykqkqfhph97.streamlit.app/
 
 ## Objectives
 
-The main objective of this project is to evaluate whether teams consistently exceed or fall short of market expectations.
+The primary objective is to determine whether observed outcomes significantly deviate from bookmaker expectations.
 
-The dashboard answers questions such as:
+The dashboard answers:
 
-* Which teams are outperforming bookmaker predictions?
-* Which teams are consistently underperforming?
-* Are betting markets accurately pricing team strength?
+Which teams outperform market probabilities?
+Are deviations statistically significant?
+Is home advantage properly calibrated?
+Does market calibration remain stable over time?
+Are there signs of structural drift?
+Dataset
 
----
-
-## Dataset
-
-Dataset: English Premier League (2025/26)
+## English Premier League (2025/26)
 
 Key features include:
 
-* Match outcomes
-* Goals scored
-* Betting odds
-* Home and away statistics
-* Referee information
-* Market probabilities
-
----
-
+Match results (FTR)
+Goals scored (FTHG, FTAG)
+Betting odds (B365H, B365D, B365A)
+Home and away statistics
+Market-implied probabilities
+Time-series match data
 ## Tech Stack
-
-* Python
-* Pandas
-* Streamlit
-* Plotly
-* OpenPyXL
-
----
-
+Python
+Pandas
+Streamlit
+Plotly
+Statsmodels
+OpenPyXL
 ## Methodology
+1️⃣ Convert Odds to Probabilities
 
-### 1. Convert Odds to Probabilities
+Decimal odds are transformed into implied probabilities:
 
-Bet365 odds are converted into implied probabilities:
+Home Win Probability
+Draw Probability
+Away Win Probability
+2️⃣ Normalize Probabilities
 
-* Home Win Probability
-* Draw Probability
-* Away Win Probability
+Bookmaker overround is removed by normalizing probabilities so that:
 
-### 2. Normalize Probabilities
+P
+home
+	​
 
-Probabilities are normalized to remove bookmaker margin (overround).
++P
+draw
+	​
 
-### 3. Encode Match Outcomes
++P
+away
+	​
 
-Match outcomes are encoded as:
+=1
+3️⃣ Encode Match Outcomes
 
-* H → Home Win
-* D → Draw
-* A → Away Win
+Outcomes are encoded as:
 
-### 4. Calculate Overperformance
+H → Home Win
+D → Draw
+A → Away Win
+4️⃣ Team-Level Overperformance
 
-The model compares:
-Actual Outcome − Expected Probability
+The model computes:
 
-Positive values:
-→ Team exceeded expectations
+Overperformance=Actual Win Rate−Expected Probability
 
-Negative values:
-→ Team underperformed expectations
+This forms the basis of team efficiency ranking.
 
----
+5️⃣ Statistical Significance Testing
 
+Team-level deviations are evaluated using:
+
+One-sample proportion Z-tests
+
+This determines whether differences between expected and actual win rates are statistically significant.
+
+Outputs include:
+
+Z-score
+P-value
+Expected probability
+Actual win rate
+Significance flag
+6️⃣ Rolling Calibration Analysis
+
+To assess time stability, a rolling window approach is implemented:
+
+Rolling Gap=Actual Home Win Rate−Expected Probability
+
+This allows detection of:
+
+Short-term calibration drift
+Structural shifts
+Market responsiveness dynamics
 ## Dashboard Features
+📊 Market Efficiency Rankings
 
-### 📊 Market Efficiency Rankings
+Visual ranking of teams by over/underperformance.
 
-Visualizes overperforming and underperforming teams.
+🔬 Statistical Test Table
 
-### 🔍 Team Explorer
+Team-level Z-scores and p-values for significance validation.
 
-Interactive filtering for individual team performance.
+📉 Rolling Calibration Monitoring
 
-### 📈 Interactive Visualizations
+Time-series visualization of market calibration stability.
 
-Dynamic Plotly charts integrated into Streamlit.
+🔍 Team Explorer
 
-### ⚽ Betting Market Insights
+Interactive filtering for detailed match-level inspection.
 
-Analyzes bookmaker expectations versus actual outcomes.
+📈 Dynamic Visualizations
 
----
+Interactive Plotly charts embedded in Streamlit.
 
-## Sample Insights
+## Key Analytical Insights
+Home advantage in the EPL appears largely well calibrated.
+Most team deviations are not statistically significant.
+Only isolated structural outliers were detected.
+Rolling calibration reveals short-term fluctuations but no persistent systemic bias.
+The market demonstrates strong aggregate efficiency.
+## Business Applications
 
-* Sunderland emerged as one of the strongest overperforming teams relative to bookmaker expectations.
-* Wolves and Tottenham significantly underperformed relative to market pricing.
-* Certain mid-table clubs consistently generated positive market inefficiencies.
+This framework supports:
 
-## Business Recommendations
+Market calibration validation
+Drift detection systems
+Risk monitoring pipelines
+Model performance auditing
+Betting market efficiency analysis
+Quantitative forecasting validation
 
-Based on the analysis, the project highlights several opportunities for improving betting market efficiency and pricing responsiveness.
+The methodology aligns with standards used in sports analytics and probabilistic trading environments.
 
-### 1. Improve Market Responsiveness
+## Strategic Value
 
-Some teams consistently outperform bookmaker expectations, suggesting that market adjustments may react slowly to emerging tactical or performance trends.
+This project demonstrates applied use of:
 
-Recommendation:
+Probability calibration
+Hypothesis testing
+Multiple comparison awareness
+Time-series monitoring
+Quantitative efficiency measurement
 
-* Increase weighting of recent form indicators
-* Adjust team strength ratings more dynamically
-* Incorporate momentum-based modeling
-
-Business impact:
-
-* Reduced pricing inefficiencies
-* More adaptive market probabilities
-
----
-
-### 2. Incorporate Bettor Behavior Analysis
-
-Large clubs often attract significant emotional betting activity regardless of actual form.
-
-Recommendation:
-
-* Separate statistical probabilities from public sentiment indicators
-* Monitor betting volume distortions on high-profile teams
-
-Business impact:
-
-* Better liability management
-* Improved market balancing
-
----
-
-### 3. Develop Market Inefficiency Monitoring Systems
-
-This project demonstrates how dashboards can track teams consistently exceeding or underperforming implied probabilities.
-
-Recommendation:
-
-* Build internal monitoring systems for prediction error tracking
-* Identify persistent market inefficiencies earlier
-
-Business impact:
-
-* Faster market recalibration
-* Improved forecasting accuracy
-
----
-
-### 4. Enhance Live Market Adjustments
-
-Repeated overperformance patterns may indicate that odds adjustments are not reacting quickly enough to changing team dynamics.
-
-Recommendation:
-
-* Integrate rolling performance metrics
-* Include injury, tactical, and momentum-based adjustments
-
-Business impact:
-
-* More accurate in-play pricing
-* Better responsiveness to real-time developments
-
----
-
-### 5. Combine Sports Analytics with Customer Behavior Insights
-
-Betting markets are influenced not only by football performance but also by customer psychology and public sentiment.
-
-Recommendation:
-
-* Combine statistical modeling with bettor behavior analysis
-* Segment recreational and professional betting patterns
-
-Business impact:
-
-* Stronger risk management
-* More efficient pricing strategies
-
----
-
-## Strategic Insight
-
-This project demonstrates how data analytics can identify gaps between bookmaker expectations and actual football outcomes, supporting more informed decision-making in sports betting markets.
-
-
----
+It represents a structured approach to evaluating market pricing behavior in professional sports betting environments.
 
 ## Installation
-
-### Clone Repository
-
-```bash
+Clone Repository
 git clone https://github.com/yourusername/epl-market-efficiency-dashboard.git
-```
-
-### Navigate into Project
-
-```bash
+Navigate to Project
 cd epl-market-efficiency-dashboard
-```
-
-### Install Dependencies
-
-```bash
+Install Dependencies
 pip install -r requirements.txt
-```
-
-### Run Streamlit App
-
-```bash
+Run Application
 streamlit run app15.py
-```
-
----
-
 ## Project Structure
-
-```bash
 ├── app15.py
 ├── E0.xlsx
 ├── requirements.txt
 └── README.md
-```
+## Future Enhancements
+Structural break detection
+Confidence intervals for rolling gaps
+Multi-league comparison
+Expected points modeling
+Predictive outcome modeling
+Live market integration
+Cloud deployment optimization
+Author
 
----
+## Stephen Yaw Ayamah
 
-## Future Improvements
-
-* Team logo integration
-* Expected points model
-* Predictive match outcome modeling
-* Betting value detection
-* Player-level analytics
-* Streamlit cloud deployment
-
----
-
-## Author
-
-Stephen Yaw Ayamah
-
-Aspiring Football Data Analyst | Sports Analytics | Python & Streamlit Projects
+Aspiring Football Data Analyst
+Sports Analytics | Probability Modeling | Quantitative Systems
+Python & Streamlit Projects
