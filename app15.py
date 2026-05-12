@@ -16,8 +16,9 @@ st.set_page_config(
 st.title("⚽ EPL 2025/26 Market Efficiency Dashboard")
 
 st.markdown("""
-This dashboard analyzes which teams are outperforming or underperforming
-bookmaker expectations in the 2025/26 Premier League season.
+This dashboard analyzes how Premier League teams perform
+relative to bookmaker expectations using statistical testing
+and rolling calibration analysis.
 """)
 
 # ---------------------------------------------------
@@ -28,165 +29,72 @@ def load_data():
     try:
         df = pd.read_excel("E0.xlsx", engine="openpyxl")
         return df
-
     except Exception as e:
         st.error(f"Error loading dataset: {e}")
         return None
 
 df = load_data()
 
-# Stop app if data fails
 if df is None:
     st.stop()
 
 # ---------------------------------------------------
-# DATA CLEANING
+# DATA PREPARATION
 # ---------------------------------------------------
 
-# Convert bookmaker odds to implied probabilities
+# Implied probabilities
 df["home_prob"] = 1 / df["B365H"]
 df["draw_prob"] = 1 / df["B365D"]
 df["away_prob"] = 1 / df["B365A"]
 
-# Normalize probabilities
-total_prob = (
-    df["home_prob"] +
-    df["draw_prob"] +
-    df["away_prob"]
-)
-
+# Normalize (remove overround)
+total_prob = df["home_prob"] + df["draw_prob"] + df["away_prob"]
 df["home_prob"] /= total_prob
 df["draw_prob"] /= total_prob
 df["away_prob"] /= total_prob
 
-# Encode actual outcomes
+# Actual outcomes
 df["actual_home_win"] = (df["FTR"] == "H").astype(int)
-df["actual_away_win"] = (df["FTR"] == "A").astype(int)
 
 # ---------------------------------------------------
-# OVERPERFORMANCE MODEL
+# TEAM-LEVEL PERFORMANCE
 # ---------------------------------------------------
 
-# Actual outcome - expected probability
-df["home_overperf"] = (
-    df["actual_home_win"] - df["home_prob"]
-)
+df["home_overperf"] = df["actual_home_win"] - df["home_prob"]
 
-df["away_overperf"] = (
-    df["actual_away_win"] - df["away_prob"]
-)
+home_perf = df.groupby("HomeTeam")["home_overperf"].mean()
 
-# Team-level aggregation
-home_perf = (
-    df.groupby("HomeTeam")["home_overperf"]
-    .mean()
-)
-
-away_perf = (
-    df.groupby("AwayTeam")["away_overperf"]
-    .mean()
-)
-
-team_overperf = (
-    home_perf + away_perf
-).sort_values(ascending=False)
+team_overperf = home_perf.sort_values(ascending=False)
 
 # ---------------------------------------------------
-# TEAM-LEVEL HOME CALIBRATION TABLE
+# TEAM SUMMARY (TOP SECTION)
 # ---------------------------------------------------
 
-team_home_calibration = (
-    df.groupby("HomeTeam")
-    .agg(
-        expected_prob=("home_prob", "mean"),
-        actual_win_rate=("actual_home_win", "mean"),
-        matches=("actual_home_win", "count")
-    )
+st.header("📈 League Overview – Team Performance Summary")
+
+col1, col2, col3 = st.columns(3)
+
+col1.metric("Total Matches", len(df))
+col2.metric("Teams Analyzed", df["HomeTeam"].nunique())
+col3.metric("Average Market Gap", round(team_overperf.mean(), 3))
+
+# ---------------------------------------------------
+# TEAM RANKING CHART
+# ---------------------------------------------------
+
+st.subheader("📊 Team Performance vs Market Expectations")
+
+top_n = st.slider("Number of Teams to Display", 5, 20, 10)
+
+team_df = (
+    team_overperf
+    .head(top_n)
     .reset_index()
 )
 
-team_home_calibration["overperformance"] = (
-    team_home_calibration["actual_win_rate"]
-    - team_home_calibration["expected_prob"]
-)
+team_df.columns = ["Team", "Score"]
 
-team_home_calibration = team_home_calibration.sort_values(
-    "overperformance",
-    ascending=False
-)
-
-# ---------------------------------------------------
-# SIDEBAR
-# ---------------------------------------------------
-st.sidebar.header("⚙️ Dashboard Controls")
-
-view_option = st.sidebar.selectbox(
-    "Select Dashboard View",
-    [
-        "Top Overperformers",
-        "Worst Performers",
-        "All Teams"
-    ]
-)
-
-top_n = st.sidebar.slider(
-    "Number of Teams",
-    min_value=5,
-    max_value=20,
-    value=10
-)
-
-selected_team = st.sidebar.selectbox(
-    "Explore Team",
-    sorted(team_overperf.index)
-)
-
-# ---------------------------------------------------
-# FILTER DATA
-# ---------------------------------------------------
-if view_option == "Top Overperformers":
-
-    filtered_data = (
-        team_overperf
-        .sort_values(ascending=False)
-        .head(top_n)
-    )
-
-elif view_option == "Worst Performers":
-
-    filtered_data = (
-        team_overperf
-        .sort_values(ascending=True)
-        .head(top_n)
-    )
-
-else:
-
-    filtered_data = (
-        team_overperf
-        .sort_values(ascending=True)
-    )
-
-# ---------------------------------------------------
-# PREPARE CHART DATA
-# ---------------------------------------------------
-team_df = filtered_data.reset_index()
-
-team_df.columns = [
-    "Team",
-    "Score"
-]
-
-# Color mapping
-colors = [
-    "green" if score > 0 else "red"
-    for score in team_df["Score"]
-]
-
-# ---------------------------------------------------
-# MAIN VISUALIZATION
-# ---------------------------------------------------
-st.subheader("📊 Team Performance vs Market Expectations")
+colors = ["green" if x > 0 else "red" for x in team_df["Score"]]
 
 fig = px.bar(
     team_df,
@@ -194,74 +102,22 @@ fig = px.bar(
     y="Team",
     orientation="h",
     text="Score",
-    title="Premier League Market Efficiency Rankings"
+    title="EPL Market Efficiency Rankings"
 )
 
-# Apply colors
-fig.update_traces(
-    marker_color=colors,
-    texttemplate="%{text:.3f}"
-)
+fig.update_traces(marker_color=colors, texttemplate="%{text:.3f}")
+fig.add_vline(x=0, line_dash="dash")
 
-# Add zero line
-fig.add_vline(
-    x=0,
-    line_width=2,
-    line_dash="dash",
-    line_color="white"
-)
+fig.update_layout(height=600)
 
-# Improve layout
-fig.update_layout(
-    xaxis_title="Over / Under Performance",
-    yaxis_title="Team",
-    title_font_size=20,
-    height=700
-)
+st.plotly_chart(fig, use_container_width=True)
 
-st.plotly_chart(
-    fig,
-    use_container_width=True
-)
-st.markdown("""
-This table compares bookmaker home win probabilities with actual home win rates.
-
-Expected Probability = Market pricing  
-Actual Win Rate = Real outcomes  
-Overperformance = Actual − Expected
-""")
-
-# ---------------------------------------------------
-# TEAM CALIBRATION TABLE
-# ---------------------------------------------------
-
-st.subheader("📊 Team-Level Home Calibration")
-
-st.dataframe(
-    team_home_calibration[
-        [
-            "HomeTeam",
-            "expected_prob",
-            "actual_win_rate",
-            "overperformance",
-            "matches"
-        ]
-    ].round(3),
-    use_container_width=True
-)
 # ---------------------------------------------------
 # ROLLING CALIBRATION ANALYSIS
 # ---------------------------------------------------
 
 st.header("📉 Rolling Calibration Analysis")
 
-st.markdown("""
-This section tracks how market calibration changes over time.
-
-Rolling Gap = Actual Home Win Rate − Expected Probability
-""")
-
-# Window selector
 window_size = st.slider(
     "Rolling Window Size",
     min_value=10,
@@ -269,139 +125,46 @@ window_size = st.slider(
     value=30
 )
 
-# Ensure data sorted by date
+# Sort by date
 df = df.sort_values("Date")
 
-# Rolling expected probability
-df["rolling_expected"] = (
-    df["home_prob"]
-    .rolling(window_size)
-    .mean()
-)
-
-# Rolling actual win rate
-df["rolling_actual"] = (
-    df["actual_home_win"]
-    .rolling(window_size)
-    .mean()
-)
-
-# Calibration gap
-df["rolling_gap"] = (
-    df["rolling_actual"] - df["rolling_expected"]
-)
+# Rolling calculations
+df["rolling_expected"] = df["home_prob"].rolling(window_size).mean()
+df["rolling_actual"] = df["actual_home_win"].rolling(window_size).mean()
+df["rolling_gap"] = df["rolling_actual"] - df["rolling_expected"]
 
 rolling_df = df.dropna(subset=["rolling_gap"])
 
-import plotly.express as px
-
-fig = px.line(
+fig2 = px.line(
     rolling_df,
     x="Date",
     y="rolling_gap",
     title="Rolling Calibration Gap (Actual − Expected)"
 )
 
-# Zero reference line
-fig.add_hline(
-    y=0,
-    line_dash="dash"
-)
+fig2.add_hline(y=0, line_dash="dash")
+fig2.update_layout(height=500)
 
-fig.update_layout(
-    height=500,
-    xaxis_title="Date",
-    yaxis_title="Calibration Gap"
-)
-
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig2, use_container_width=True)
 
 # ---------------------------------------------------
 # TEAM EXPLORER
 # ---------------------------------------------------
-st.subheader(f"🔍 Team Explorer: {selected_team}")
 
-team_matches = df[
-    (df["HomeTeam"] == selected_team) |
-    (df["AwayTeam"] == selected_team)
-]
+st.subheader("🔍 Team Explorer")
 
-st.dataframe(
-    team_matches[
-        [
-            "Date",
-            "HomeTeam",
-            "AwayTeam",
-            "FTHG",
-            "FTAG",
-            "FTR",
-            "B365H",
-            "B365D",
-            "B365A"
-        ]
-    ],
-    use_container_width=True
+selected_team = st.selectbox(
+    "Select Team",
+    sorted(team_overperf.index)
 )
 
-# ---------------------------------------------------
-# TEAM SUMMARY METRICS
-# ---------------------------------------------------
-st.subheader("📈 Team Summary")
+team_matches = df[df["HomeTeam"] == selected_team]
 
-col1, col2, col3 = st.columns(3)
-
-matches_played = len(team_matches)
-
-wins = len(
-    team_matches[
-        (
-            (team_matches["HomeTeam"] == selected_team) &
-            (team_matches["FTR"] == "H")
-        ) |
-        (
-            (team_matches["AwayTeam"] == selected_team) &
-            (team_matches["FTR"] == "A")
-        )
-    ]
-)
-
-avg_perf = round(
-    team_overperf[selected_team],
-    3
-)
-
-col1.metric(
-    "Matches Played",
-    matches_played
-)
-
-col2.metric(
-    "Wins",
-    wins
-)
-
-col3.metric(
-    "Overperformance Score",
-    avg_perf
-)
-
-# ---------------------------------------------------
-# INSIGHT BOX
-# ---------------------------------------------------
-st.subheader("🧠 Key Insight")
-
-st.info(
-    """
-    This dashboard compares actual match outcomes against bookmaker expectations.
-
-    • Positive scores indicate teams outperforming market expectations.
-    • Negative scores indicate teams underperforming market expectations.
-    • Bookmaker probabilities are derived from Bet365 odds.
-    """
-)
+st.dataframe(team_matches, use_container_width=True)
 
 # ---------------------------------------------------
 # RAW DATA
 # ---------------------------------------------------
+
 with st.expander("📂 View Raw Dataset"):
     st.dataframe(df, use_container_width=True)
