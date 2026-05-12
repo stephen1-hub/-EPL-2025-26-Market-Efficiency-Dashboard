@@ -148,6 +148,89 @@ fig2.update_layout(height=500)
 st.plotly_chart(fig2, use_container_width=True)
 
 # ---------------------------------------------------
+# TEAM-LEVEL STATISTICAL TESTING
+# ---------------------------------------------------
+
+from statsmodels.stats.proportion import proportions_ztest
+
+results = []
+
+for team in team_overperf.index:
+
+    team_matches = df[df["HomeTeam"] == team]
+
+    if len(team_matches) == 0:
+        continue
+
+    # Observed wins
+    home_wins = team_matches["actual_home_win"].sum()
+
+    # Total matches
+    n = len(team_matches)
+
+    # Expected probability (mean market probability)
+    expected_prob = team_matches["home_prob"].mean()
+
+    # Z-test
+    z_stat, p_value = proportions_ztest(
+        home_wins,
+        n,
+        value=expected_prob
+    )
+
+    # Actual win rate
+    actual_win_rate = home_wins / n
+
+    # Overperformance
+    overperf = actual_win_rate - expected_prob
+
+    results.append([
+        team,
+        n,
+        z_stat,
+        p_value,
+        expected_prob,
+        actual_win_rate,
+        overperf
+    ])
+
+# Create results DataFrame
+test_df = pd.DataFrame(
+    results,
+    columns=[
+        "Team",
+        "Matches",
+        "Z-Score",
+        "P-Value",
+        "Expected_Prob",
+        "Actual_Win_Rate",
+        "Overperformance"
+    ]
+)
+
+# Sort by P-Value (most significant first)
+test_df = test_df.sort_values("P-Value")
+
+# ---------------------------------------------------
+# STATISTICAL TEST RESULTS
+# ---------------------------------------------------
+
+st.header("🔬 Team-Level Statistical Significance Test")
+
+st.markdown("""
+This table shows whether team performance deviations
+from bookmaker expectations are statistically significant.
+""")
+
+# Add significance column
+test_df["Significant (p < 0.05)"] = test_df["P-Value"] < 0.05
+
+st.dataframe(
+    test_df,
+    use_container_width=True
+)
+
+# ---------------------------------------------------
 # TEAM EXPLORER
 # ---------------------------------------------------
 
