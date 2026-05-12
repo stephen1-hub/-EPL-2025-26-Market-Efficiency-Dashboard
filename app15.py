@@ -250,6 +250,73 @@ st.dataframe(
     use_container_width=True
 )
 # ---------------------------------------------------
+# ROLLING CALIBRATION ANALYSIS
+# ---------------------------------------------------
+
+st.header("📉 Rolling Calibration Analysis")
+
+st.markdown("""
+This section tracks how market calibration changes over time.
+
+Rolling Gap = Actual Home Win Rate − Expected Probability
+""")
+
+# Window selector
+window_size = st.slider(
+    "Rolling Window Size",
+    min_value=10,
+    max_value=50,
+    value=30
+)
+
+# Ensure data sorted by date
+df = df.sort_values("Date")
+
+# Rolling expected probability
+df["rolling_expected"] = (
+    df["home_prob"]
+    .rolling(window_size)
+    .mean()
+)
+
+# Rolling actual win rate
+df["rolling_actual"] = (
+    df["actual_home_win"]
+    .rolling(window_size)
+    .mean()
+)
+
+# Calibration gap
+df["rolling_gap"] = (
+    df["rolling_actual"] - df["rolling_expected"]
+)
+
+rolling_df = df.dropna(subset=["rolling_gap"])
+
+import plotly.express as px
+
+fig = px.line(
+    rolling_df,
+    x="Date",
+    y="rolling_gap",
+    title="Rolling Calibration Gap (Actual − Expected)"
+)
+
+# Zero reference line
+fig.add_hline(
+    y=0,
+    line_dash="dash"
+)
+
+fig.update_layout(
+    height=500,
+    xaxis_title="Date",
+    yaxis_title="Calibration Gap"
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+# ---------------------------------------------------
 # TEAM EXPLORER
 # ---------------------------------------------------
 st.subheader(f"🔍 Team Explorer: {selected_team}")
